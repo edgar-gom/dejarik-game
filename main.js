@@ -143,12 +143,18 @@ let accionesRestantes = 2; // NUEVO: Contador de acciones
 let turnosEnCentro = { equipo1: 0, equipo2: 0 }; // Contador para ganar por dominio del centro
 const efectosActivos = []; // NUEVO: Guarda las animaciones de ataque
 
+// --- AJUSTE DE VOLÚMENES ---
+// Bajamos la música para que los SFX (efectos) destaquen más
+document.getElementById('bgm-menu').volume = 0.7;    // % de volumen (70%)
+document.getElementById('bgm-batalla').volume = 0.4; // % de volumen (40%)
+document.getElementById('bgm-victoria').volume = 0.7; // % de volumen (70%)
+
 // CLASES DE CRIATURAS (Tus 4 tipos)
 const CLASES = {
-    'tanque':    { maxHp: 20, atk: 8, def: 3, rango: 1  }, // Mucha vida, pega normal
-    'asesino':   { maxHp: 10,  atk: 12, def: 1, rango: 2  }, // Pega durísimo, muere rápido <- ¡Este ahora dispara de lejos!
-    'guerrero':  { maxHp: 15, atk: 9, def: 2, rango: 1  }, // Equilibrado
-    'defensor':  { maxHp: 18, atk: 5, def: 4, rango: 1  }  // Aguanta golpes en el centro
+    'tanque':    { maxHp: 20, atk: 8, def: 3, rango: 1, tiempoAnim: 4500  }, // Mucha vida, pega normal
+    'asesino':   { maxHp: 10,  atk: 12, def: 1, rango: 2, tiempoAnim: 1500 }, // Pega durísimo, muere rápido <- ¡Este ahora dispara de lejos!
+    'guerrero':  { maxHp: 15, atk: 9, def: 2, rango: 1, tiempoAnim: 4000  }, // Equilibrado
+    'defensor':  { maxHp: 18, atk: 5, def: 4, rango: 1, tiempoAnim: 5500  }  // Aguanta golpes en el centro
 };
 
 // HELPER 1: Convierte Casilla Lógica (Anillo, Segmento) a Coordenadas 3D (X, Z)
@@ -190,6 +196,23 @@ function calcularDistanciaGrid(a1, s1, a2, s2) {
         }
     }
     return 3; // Está a 3 o más casillas de distancia
+}
+
+// HELPER 5: Reproductor de Audio Seguro
+function reproducirSonido(idSonido) {
+    const sonido = document.getElementById(idSonido);
+    if (sonido) {
+        sonido.currentTime = 0; // Lo regresa a 0 por si se reproduce muy rápido (ametralladora)
+        // El catch evita que el juego se congele si el archivo no existe o el navegador lo bloquea
+        sonido.play().catch(e => console.warn(`No se pudo reproducir ${idSonido}:`, e));
+    }
+}
+window.entrarAlMenu = function() {
+    document.getElementById('pantalla-splash').classList.remove('activa');
+    document.getElementById('pantalla-menu').classList.add('activa');
+    
+    reproducirSonido('bgm-menu'); // Empieza la música del menú
+    reproducirSonido('sfx-clic');
 }
 
 const gltfLoader = new GLTFLoader();
@@ -314,6 +337,8 @@ function cargarPieza(ruta, anillo, segmento, equipo, tipoClase) {
 //6. SISTEMA DE VICTORIA
 // ==========================================
 function mostrarVictoria(mensaje) {
+    document.getElementById('bgm-batalla').pause(); // Apaga la música de batalla
+    reproducirSonido('bgm-victoria');               // Toca fanfarria de victoria
     document.getElementById('texto-victoria').innerText = mensaje;
     document.getElementById('pantalla-victoria').classList.add('activa');
 }
@@ -353,10 +378,10 @@ const INVENTARIO = [
 let equipo1Elegido = [];
 
 // Animación del Splash Screen
-setTimeout(() => {
-    document.getElementById('pantalla-splash').classList.remove('activa');
-    document.getElementById('pantalla-menu').classList.add('activa');
-}, 3000); // El título desaparece tras 3 segundos
+//setTimeout(() => {
+  //  document.getElementById('pantalla-splash').classList.remove('activa');
+  //  document.getElementById('pantalla-menu').classList.add('activa');
+//}, 3000); // El título desaparece tras 3 segundos
 
 // Botón "Jugar" del menú
 window.irASeleccion = function() {
@@ -426,6 +451,9 @@ function generarGridSeleccion() {
 
 // Botón "Comenzar Batalla"
 window.iniciarJuego = function() {
+    document.getElementById('bgm-menu').pause(); // Apaga la música del menú
+    reproducirSonido('bgm-batalla');             // Enciende la música épica
+    reproducirSonido('sfx-clic');
     document.getElementById('pantalla-seleccion').classList.remove('activa');
     // AÑADE ESTA LÍNEA PARA BORRAR EL HOLOGRAMA DEL MENÚ:
     if(modeloPreview) scene.remove(modeloPreview);
@@ -459,7 +487,7 @@ const raton = new THREE.Vector2();
 let piezaSeleccionada = null; 
 //
 //Funcion de efectos
-function reproducirEfectoAtaque(atacante, defensor, clase) {
+function reproducirEfectoAtaque(atacante, defensor, clase, tiempoAnim) {
     const posA = atacante.position.clone().setY(1.5); // Altura del pecho
     const posD = defensor.position.clone().setY(1.5);
 
@@ -474,6 +502,7 @@ function reproducirEfectoAtaque(atacante, defensor, clase) {
     // 2. EFECTOS POR CLASE
     if (clase === 'tanque') {
         // CILINDRO (Golpe contundente desde arriba)
+        reproducirSonido('sfx-ataque-tanque'); // <--- AÑADIDO
         const geo = new THREE.CylinderGeometry(0.6, 0.6, 2, 16);
         const mat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 });
         vfxObj = new THREE.Mesh(geo, mat);
@@ -482,6 +511,7 @@ function reproducirEfectoAtaque(atacante, defensor, clase) {
     } 
     else if (clase === 'guerrero') {
         // CORTE (Un arco que gira)
+        reproducirSonido('sfx-ataque-guerrero'); // <--- AÑADIDO
         const geo = new THREE.PlaneGeometry(2, 0.2);
         const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.DoubleSide });
         vfxObj = new THREE.Mesh(geo, mat);
@@ -491,6 +521,7 @@ function reproducirEfectoAtaque(atacante, defensor, clase) {
     }
     else if (clase === 'defensor') {
         // DESTELLO (Explosión esférica)
+        reproducirSonido('sfx-ataque-defensor'); // <--- AÑADIDO
         const geo = new THREE.SphereGeometry(1, 16, 16);
         const mat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, wireframe: true });
         vfxObj = new THREE.Mesh(geo, mat);
@@ -499,6 +530,7 @@ function reproducirEfectoAtaque(atacante, defensor, clase) {
     }
     else if (clase === 'asesino') {
         // FLECHA (Proyectil a distancia)
+        reproducirSonido('sfx-ataque-asesino'); // <--- AÑADIDO
         const geo = new THREE.ConeGeometry(0.3, 1, 8);
         const mat = new THREE.MeshBasicMaterial({ color: 0xff003c });
         vfxObj = new THREE.Mesh(geo, mat);
@@ -508,26 +540,38 @@ function reproducirEfectoAtaque(atacante, defensor, clase) {
         scene.add(vfxObj);
     }
 
-    // 3. LA ANIMACIÓN FRAME A FRAME
+// 3. LA ANIMACIÓN BASADA EN TIEMPO (0% a 100%)
+    let tiempoInicio = Date.now(); // Guardamos el milisegundo exacto en que empezó
+
     const animarVFX = () => {
         if (!vfxObj) return;
         
+        // Calculamos qué porcentaje de la animación llevamos (de 0.0 a 1.0)
+        let progreso = (Date.now() - tiempoInicio) / tiempoAnim;
+        if (progreso > 1) progreso = 1; // Tope máximo del 100%
+
         if (clase === 'tanque') {
-            vfxObj.position.y -= 0.3; // Aplasta hacia abajo
-            if (vfxObj.position.y < 1) vfxObj.position.y = 1; 
+            // Cae suavemente desde Y=5 hasta el pecho del enemigo (Y=1.5)
+            vfxObj.position.y = THREE.MathUtils.lerp(posD.y + 4, posD.y, progreso);
         } 
         else if (clase === 'guerrero') {
-            vfxObj.rotation.z += 0.5; // Gira como una espada
-            vfxObj.scale.addScalar(0.1); 
+            // El tajo crece de tamaño 1 a 4, y da exactamente 1 vuelta completa (Math.PI * 2)
+            let escala = THREE.MathUtils.lerp(1, 4, progreso);
+            vfxObj.scale.set(escala, escala, escala);
+            vfxObj.rotation.z = progreso * Math.PI * 2; 
         }
         else if (clase === 'defensor') {
-            vfxObj.scale.addScalar(0.15); // Se infla
-            vfxObj.material.opacity -= 0.05; 
+            // La esfera crece de 1 a 3 y se desvanece de opacidad 1 a 0
+            let escala = THREE.MathUtils.lerp(1, 3, progreso);
+            vfxObj.scale.set(escala, escala, escala);
+            vfxObj.material.opacity = 1 - progreso; 
         }
         else if (clase === 'asesino') {
-            vfxObj.position.lerp(posD, 0.2); // Viaja por el láser hacia el objetivo
+            // lerpVectors mueve el objeto desde el punto A al punto D exactamente según el % de progreso
+            vfxObj.position.lerpVectors(posA, posD, progreso);
         }
     };
+    
     efectosActivos.push(animarVFX);
 
     // 4. LIMPIAR BASURA TRAS 400ms
@@ -541,7 +585,7 @@ function reproducirEfectoAtaque(atacante, defensor, clase) {
         // Lo sacamos de la lista de animaciones
         const index = efectosActivos.indexOf(animarVFX);
         if (index > -1) efectosActivos.splice(index, 1);
-    }, 400);
+    }, tiempoAnim);
 }
 
 //
@@ -592,6 +636,7 @@ window.addEventListener('click', (evento) => {
                     // REGLA: Solo atacar si está ADYACENTE
                     // --- NUEVA LÓGICA DE RANGO ---
                     let rangoMaximo = CLASES[piezaSeleccionada.userData.clase].rango;
+                    let tiempoDeAtaque = CLASES[piezaSeleccionada.userData.clase].tiempoAnim; // <-- Extraemos el tiempo
                     let distancia = calcularDistanciaGrid(piezaSeleccionada.userData.anillo, piezaSeleccionada.userData.segmento, modeloClickeado.userData.anillo, modeloClickeado.userData.segmento);
 
                     if (distancia <= rangoMaximo) {
@@ -605,7 +650,8 @@ window.addEventListener('click', (evento) => {
                         modeloClickeado.userData.hpBarraVerde.scale.x = Math.max(0.01, porcentaje); 
 
                         // --- NUEVO: REPRODUCIR ANIMACIONES ---
-                        reproducirEfectoAtaque(piezaSeleccionada, modeloClickeado, piezaSeleccionada.userData.clase);
+                        //reproducirEfectoAtaque(piezaSeleccionada, modeloClickeado, piezaSeleccionada.userData.clase);
+                        reproducirEfectoAtaque(piezaSeleccionada, modeloClickeado, piezaSeleccionada.userData.clase, tiempoDeAtaque);
 
                         // Destello Rojo de Dolor (Se queda igual)
                         modeloClickeado.traverse((nodo) => {
@@ -623,6 +669,7 @@ window.addEventListener('click', (evento) => {
                                     }
                                 });
                             } else {
+                                reproducirSonido('sfx-muerte'); // <--- ¡AÑADIDO AQUÍ!
                                 scene.remove(modeloClickeado);
                                 // Borrar también la hitbox invisible si la usaste
                                 const padre = modeloClickeado.parent;
@@ -631,7 +678,7 @@ window.addEventListener('click', (evento) => {
                                 piezasArray.splice(piezasArray.indexOf(modeloClickeado), 1);
                                 verificarVictoria();
                             }
-                        }, 300);
+                        }, tiempoDeAtaque);
 
                         consumirAccion(); // (O finalizarTurno() si no implementaste las acciones del paso anterior)
                     } else {
