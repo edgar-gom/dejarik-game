@@ -1,0 +1,43 @@
+body {
+    margin: 0;
+    overflow: hidden; /* Evita barras de desplazamiento */
+    background-color: #000; /* Fondo negro como el espacio */
+}
+
+canvas {
+    display: block; /* Elimina márgenes extra del canvas */
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; /* Deja pasar los clics al 3D cuando está vacío */
+    z-index: 10;
+}
+.pantalla {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: #00ffcc;
+    font-family: 'Courier New', monospace;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    opacity: 0; visibility: hidden; transition: opacity 0.5s;
+    pointer-events: auto; /* Bloquea clics al 3D */
+}
+.pantalla.activa {
+    opacity: 1; visibility: visible;
+}
+.glitch { font-size: 5rem; text-shadow: 2px 2px #ff003c, -2px -2px #00aaff; }
+button {
+    background: transparent; border: 2px solid #00ffcc; color: #00ffcc;
+    padding: 15px 30px; font-size: 1.5rem; cursor: pointer; margin-top: 20px;
+}
+button:hover { background: #00ffcc; color: black; }
+#grid-monstruos {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; width: 80%;
+}
+.carta-monstruo {
+    border: 1px solid #555; padding: 10px; text-align: center; cursor: pointer;
+}
+.carta-monstruo.seleccionado { border-color: #00ffcc; background: rgba(0,255,204,0.2); }

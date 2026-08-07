@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dejarik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Import Map para manejar Three.js modernamente -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- PANTALLAS DE INTERFAZ -->
+    <div id="ui-layer">
+        
+        <!-- 1. Pantalla de Inicio -->
+        <div id="pantalla-splash" class="pantalla activa">
+            <h1 class="glitch">HOLO - DEJARIK</h1>
+     <!-- NUEVO: Botón para iniciar (Los navegadores bloquean el audio si no haces clic primero) -->
+
+             <button onclick="entrarAlMenu()">ENTRAR AL SISTEMA</button>    
+        </div>
+
+        <!-- 2. Menú Principal -->
+        <div id="pantalla-menu" class="pantalla">
+            <h2>INSTRUCCIONES</h2>
+            <p>- Mueve una pieza por turno a una casilla adyacente.</p>
+            <p>- Ataca a los enemigos para vaciar su barra de vida.</p>
+            <p>- Mantén una pieza en el rombo central durante 4 turnos para ganar.</p>
+            <button onclick="irASeleccion()">JUGAR</button>
+        </div>
+
+        <!-- 3. Selección de Equipo (Dividida en 2 mitades) -->
+        <div id="pantalla-seleccion" class="pantalla" style="flex-direction: row; justify-content: flex-start; background: transparent;">
+            <div style="width: 50%; padding: 40px; height: 100%; background-color: rgba(0, 0, 0, 0.8); overflow-y: auto; display: flex; flex-direction: column; align-items: center;">
+                <h2>ELIGE TUS 4 CRIATURAS</h2>
+                <div id="grid-monstruos"></div>
+                <h3 id="contador-seleccion">Seleccionados: 0 / 4</h3>
+                <button id="btn-iniciar" onclick="iniciarJuego()" style="display:none;">COMENZAR BATALLA</button>
+            </div>
+            <div style="width: 50%;"></div>
+        </div>
+
+        <div id="pantalla-victoria" class="pantalla">
+            <h1 id="texto-victoria" class="glitch" style="text-align: center;">¡VICTORIA!</h1>
+            <button onclick="location.reload()">VOLVER AL MENÚ</button>
+        </div>
+        
+    </div>
+
+     <!-- ========================================== -->
+    <!-- SISTEMA DE AUDIO (Agrega tus .mp3 aquí) -->
+    <!-- ========================================== -->
+    <audio id="bgm-menu" loop src="assets/audio/menu.mp3"></audio>
+    <audio id="bgm-batalla" loop src="assets/audio/batalla.mp3"></audio>
+    <audio id="bgm-victoria" src="assets/audio/victoria.mp3"></audio>
+    
+    <audio id="sfx-laser" src="assets/audio/laser.mp3"></audio>
+    <audio id="sfx-muerte" src="assets/audio/explosion.mp3"></audio>
+    <audio id="sfx-clic" src="assets/audio/clic.mp3"></audio>
+
+    
+    <!-- Este script debe ser module para usar import/export -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>
