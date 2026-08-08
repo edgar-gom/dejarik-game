@@ -317,15 +317,15 @@ function cargarPieza(ruta, anillo, segmento, equipo, tipoClase) {
             modelo.add(aroEquipo); 
             // --- NUEVO: HITBOX INVISIBLE ---
             // Creamos un cilindro transparente que envuelve al modelo
-            const hitboxGeo = new THREE.CylinderGeometry(0.8, 0.8, 3, 16);
-            const hitboxMat = new THREE.MeshBasicMaterial({ visible: false }); // Invisible
-            const hitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
+            //const hitboxGeo = new THREE.CylinderGeometry(0.8, 0.8, 3, 16);
+            //const hitboxMat = new THREE.MeshBasicMaterial({ visible: false }); // Invisible
+            //const hitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
             // Lo levantamos para que coincida con el cuerpo
-            hitbox.position.y = 1.5; 
+           // hitbox.position.y = 1.5; 
             
             // Le damos la misma metadata para que el click lo detecte como si fuera el robot
-            hitbox.userData = { esPieza: true, objetoRaiz: modelo };
-            modelo.add(hitbox); // Lo pegamos al personaje
+            //hitbox.userData = { esPieza: true, objetoRaiz: modelo };
+           // modelo.add(hitbox); // Lo pegamos al personaje
 
             scene.add(modelo);
             piezasArray.push(modelo); 
@@ -591,105 +591,90 @@ function reproducirEfectoAtaque(atacante, defensor, clase, tiempoAnim) {
 
 //
 window.addEventListener('click', (evento) => {
-    // Bloquear los clics humanos si estamos en modo 1P y es el turno del robot
+    // Bloquear los clics si le toca a la máquina
     if (modoJuego === '1P' && turnoActual === 2) return;
+
     raton.x = (evento.clientX / window.innerWidth) * 2 - 1;
     raton.y = -(evento.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(raton, camera);
 
+    // El rayo busca chocar contra cualquier modelo o la mesa invisible
     const intersecciones = raycaster.intersectObjects([...piezasArray, planoClic], true);
 
-    if (intersecciones.length > 0) {
-        const objetoTocado = intersecciones[0].object;
+    if (intersecciones.length === 0) return; // Si clicó al espacio vacío, ignorar
 
-        // ---------------------------------------------------------
-        // CASO A: HACEMOS CLIC EN UNA PIEZA (Para Seleccionar o Atacar)
-        // ---------------------------------------------------------
-        if (objetoTocado.userData.esPieza || (objetoTocado.parent && objetoTocado.parent.userData.esPieza)) {
-            let modeloClickeado = objetoTocado.userData.esPieza ? objetoTocado.userData.objetoRaiz : objetoTocado.parent.userData.objetoRaiz;
+    let anilloClic = null;
+    let segmentoClic = null;
+    let piezaEnCasilla = null;
+
+    const objetoTocado = intersecciones[0].object;
+
+    // 1. TRADUCIR EL CLIC A COORDENADAS LÓGICAS (Anillo y Segmento)
+    if (objetoTocado === planoClic) {
+        // Si clicó directo en la mesa plana
+        const p = intersecciones[0].point;
+        const distancia = Math.hypot(p.x, p.z);
+        if (distancia > 5.5) { piezaSeleccionada = null; return; } // Clic fuera del tablero
+
+        anilloClic = (distancia < 1.5) ? 0 : (distancia < 3.5) ? 1 : 2;
+        let angulo = Math.atan2(p.z, p.x); 
+        if (angulo < 0) angulo += 2 * Math.PI; 
+        segmentoClic = (anilloClic === 0) ? 0 : Math.floor(angulo / (Math.PI / 6));
+        
+        // Revisamos si en esa coordenada lógica hay un robot parado
+        piezaEnCasilla = obtenerPiezaEnCasilla(anilloClic, segmentoClic);
+    } else {
+        // Si clicó directo en un robot 3D
+        let modeloClickeado = objetoTocado.userData.esPieza ? objetoTocado.userData.objetoRaiz : objetoTocado.parent?.userData?.objetoRaiz;
+        if (!modeloClickeado) return; 
+
+        // Leemos las coordenadas en las que el robot está parado
+        piezaEnCasilla = modeloClickeado;
+        anilloClic = piezaEnCasilla.userData.anillo;
+        segmentoClic = piezaEnCasilla.userData.segmento;
+    }
+
+    // 2. EL CEREBRO DE LAS ACCIONES (Ahora es súper limpio)
+    
+    // CASO A: No hay pieza seleccionada
+    if (!piezaSeleccionada) {
+        // Intentamos seleccionar (si hay pieza y es nuestra)
+        if (piezaEnCasilla && piezaEnCasilla.userData.equipo === turnoActual) {
+            piezaSeleccionada = piezaEnCasilla;
+            piezaSeleccionada.position.y += 0.5; // Saltito visual
+            setTimeout(() => { piezaSeleccionada.position.y -= 0.5; }, 150);
+            reproducirSonido('sfx-clic');
+        }
+        return;
+    }
+
+    // CASO B: Ya hay una pieza seleccionada
+    if (piezaEnCasilla) {
+        // B.1 Clic en un ALIADO: Cambiamos la selección al nuevo aliado
+        if (piezaEnCasilla.userData.equipo === piezaSeleccionada.userData.equipo) {
+            piezaSeleccionada = piezaEnCasilla;
+            piezaSeleccionada.position.y += 0.5; 
+            setTimeout(() => { piezaSeleccionada.position.y -= 0.5; }, 150);
+            reproducirSonido('sfx-clic');
+        } 
+        // B.2 Clic en un ENEMIGO: Atacar
+        else {
+            let rangoMaximo = CLASES[piezaSeleccionada.userData.clase].rango;
+            let dist = calcularDistanciaGrid(piezaSeleccionada.userData.anillo, piezaSeleccionada.userData.segmento, anilloClic, segmentoClic);
             
-            // Si no tenemos nada seleccionado, intentamos SELECCIONARLA
-            if (!piezaSeleccionada) {
-                // REGLA: Solo puedes seleccionar piezas de tu turno
-                if (modeloClickeado.userData.equipo === turnoActual) {
-                    piezaSeleccionada = modeloClickeado;
-                    modeloClickeado.position.y += 0.5; // Saltito
-                    setTimeout(() => { modeloClickeado.position.y -= 0.5; }, 150);
-                    console.log(`Seleccionado: ${modeloClickeado.userData.clase} (Equipo ${turnoActual})`);
-                } else {
-                    console.log("No es tu turno.");
-                }
-                return;
-            } 
-            
-            // Si YA tenemos una pieza seleccionada y clickeamos OTRA pieza
-            if (piezaSeleccionada) {
-                // --- NUEVA LÓGICA: Si hacemos clic en un ALIADO, cambiamos la selección ---
-                if (modeloClickeado.userData.equipo === piezaSeleccionada.userData.equipo) {
-                    piezaSeleccionada = modeloClickeado; // Cambiamos el foco
-                    modeloClickeado.position.y += 0.5; // Saltito del nuevo elegido
-                    setTimeout(() => { modeloClickeado.position.y -= 0.5; }, 150);
-                    console.log(`Cambio de selección a: ${modeloClickeado.userData.clase}`);
-                    return; 
-                }
-
-                // Si es un enemigo (Equipo diferente) procedemos al ATAQUE
-                if (modeloClickeado.userData.equipo !== piezaSeleccionada.userData.equipo) {
-                    
-                    // REGLA: Solo atacar si está ADYACENTE
-                    // --- NUEVA LÓGICA DE RANGO ---
-                    let rangoMaximo = CLASES[piezaSeleccionada.userData.clase].rango;
-                    let tiempoDeAtaque = CLASES[piezaSeleccionada.userData.clase].tiempoAnim; // <-- Extraemos el tiempo
-                    let distancia = calcularDistanciaGrid(piezaSeleccionada.userData.anillo, piezaSeleccionada.userData.segmento, modeloClickeado.userData.anillo, modeloClickeado.userData.segmento);
-
-                    if (distancia <= rangoMaximo) {
-                ejecutarAtaque(piezaSeleccionada, modeloClickeado);
-            }else {
-                        console.log(`El enemigo está fuera de rango. Rango del atacante: ${rangoMaximo}`);
-                    }
-                }
-                piezaSeleccionada = null; // Deseleccionamos tras la acción
-                return;
+            if (dist <= rangoMaximo) {
+                ejecutarAtaque(piezaSeleccionada, piezaEnCasilla);
+            } else {
+                console.log("El enemigo está fuera de rango.");
             }
         }
-
-        // ---------------------------------------------------------
-        // CASO B: HACEMOS CLIC EN LA MESA (Para Mover)
-        // ---------------------------------------------------------
-        // ---------------------------------------------------------
-        // CASO B: HACEMOS CLIC EN LA MESA (Para Mover)
-        // ---------------------------------------------------------
-        // Buscamos si el rayo atravesó la mesa, sin importar si chocó con hitboxes invisibles antes
-        const toqueMesa = intersecciones.find(i => i.object === planoClic);
-
-        if (toqueMesa && piezaSeleccionada) {
-            
-            const p = toqueMesa.point;
-            const distancia = Math.hypot(p.x, p.z);
-            if (distancia > 5.5) { piezaSeleccionada = null; return; }
-
-            let nuevoAnillo = (distancia < 1.5) ? 0 : (distancia < 3.5) ? 1 : 2;
-            let angulo = Math.atan2(p.z, p.x); 
-            if (angulo < 0) angulo += 2 * Math.PI; 
-            let nuevoSegmento = Math.floor(angulo / (Math.PI / 6)); 
-
-            if (nuevoAnillo === 0) nuevoSegmento = 0; 
-
-            // REGLAS
-            if (!esAdyacente(piezaSeleccionada.userData.anillo, piezaSeleccionada.userData.segmento, nuevoAnillo, nuevoSegmento)) {
-                console.log("Solo puedes mover 1 casilla a la vez.");
-                piezaSeleccionada = null;
-                return;
-
-            }
-            if (obtenerPiezaEnCasilla(nuevoAnillo, nuevoSegmento)) {
-                console.log("Casilla ocupada.");
-                piezaSeleccionada = null;
-                return;
-            }
-
-            // <-- AHORA USAREMOS LA NUEVA FUNCIÓN QUE CREAREMOS EN EL PASO 3 -->
-            ejecutarMovimiento(piezaSeleccionada, nuevoAnillo, nuevoSegmento);
+    } 
+    // CASO C: Clic en CASILLA VACÍA: Intentar Mover
+    else {
+        if (esAdyacente(piezaSeleccionada.userData.anillo, piezaSeleccionada.userData.segmento, anilloClic, segmentoClic)) {
+            ejecutarMovimiento(piezaSeleccionada, anilloClic, segmentoClic);
+        } else {
+            console.log("Movimiento inválido: Solo a casillas adyacentes.");
         }
     }
 });
