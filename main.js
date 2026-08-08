@@ -8,7 +8,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 // Importamos la librería principal y los controles de cámara
 import * as THREE from 'three';
-
+let modoJuego = '2P'; // Guardará si jugamos contra la máquina o un humano
 
 // 1. CONFIGURACIÓN BÁSICA (Escena, Cámara, Renderizador)
 const scene = new THREE.Scene();
@@ -384,10 +384,11 @@ let equipo1Elegido = [];
 //}, 3000); // El título desaparece tras 3 segundos
 
 // Botón "Jugar" del menú
-window.irASeleccion = function() {
+window.irASeleccion = function(modo) {
+    modoJuego = modo; // Guardamos lo que el jugador eligió
     document.getElementById('pantalla-menu').classList.remove('activa');
     document.getElementById('pantalla-seleccion').classList.add('activa');
-    generarGridSeleccion();
+    generarGridSeleccion(); 
 }
 
 // Crear los 12 botones// Variable global para el modelo que gira en el menú
@@ -590,6 +591,8 @@ function reproducirEfectoAtaque(atacante, defensor, clase, tiempoAnim) {
 
 //
 window.addEventListener('click', (evento) => {
+    // Bloquear los clics humanos si estamos en modo 1P y es el turno del robot
+    if (modoJuego === '1P' && turnoActual === 2) return;
     raton.x = (evento.clientX / window.innerWidth) * 2 - 1;
     raton.y = -(evento.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(raton, camera);
@@ -640,48 +643,8 @@ window.addEventListener('click', (evento) => {
                     let distancia = calcularDistanciaGrid(piezaSeleccionada.userData.anillo, piezaSeleccionada.userData.segmento, modeloClickeado.userData.anillo, modeloClickeado.userData.segmento);
 
                     if (distancia <= rangoMaximo) {
-                        
-                        // Daño y barras de vida
-                        let daño = Math.max(1, piezaSeleccionada.userData.atk - modeloClickeado.userData.def);
-                        modeloClickeado.userData.hp -= daño;
-                        
-                        let maxHp = CLASES[modeloClickeado.userData.clase].maxHp;
-                        let porcentaje = Math.max(0, modeloClickeado.userData.hp / maxHp);
-                        modeloClickeado.userData.hpBarraVerde.scale.x = Math.max(0.01, porcentaje); 
-
-                        // --- NUEVO: REPRODUCIR ANIMACIONES ---
-                        //reproducirEfectoAtaque(piezaSeleccionada, modeloClickeado, piezaSeleccionada.userData.clase);
-                        reproducirEfectoAtaque(piezaSeleccionada, modeloClickeado, piezaSeleccionada.userData.clase, tiempoDeAtaque);
-
-                        // Destello Rojo de Dolor (Se queda igual)
-                        modeloClickeado.traverse((nodo) => {
-                            if (nodo.isMesh && nodo.material) {
-                                if(!nodo.userData.colorOriginal) nodo.userData.colorOriginal = nodo.material.color.getHex();
-                                nodo.material.color.setHex(0xff0000); 
-                            }
-                        });
-
-                        setTimeout(() => {
-                            if (modeloClickeado.userData.hp > 0) {
-                                modeloClickeado.traverse((nodo) => {
-                                    if (nodo.isMesh && nodo.material && nodo.userData.colorOriginal) {
-                                        nodo.material.color.setHex(nodo.userData.colorOriginal);
-                                    }
-                                });
-                            } else {
-                                reproducirSonido('sfx-muerte'); // <--- ¡AÑADIDO AQUÍ!
-                                scene.remove(modeloClickeado);
-                                // Borrar también la hitbox invisible si la usaste
-                                const padre = modeloClickeado.parent;
-                                if (padre) scene.remove(padre);
-                                
-                                piezasArray.splice(piezasArray.indexOf(modeloClickeado), 1);
-                                verificarVictoria();
-                            }
-                        }, tiempoDeAtaque);
-
-                        consumirAccion(); // (O finalizarTurno() si no implementaste las acciones del paso anterior)
-                    } else {
+                ejecutarAtaque(piezaSeleccionada, modeloClickeado);
+            }else {
                         console.log(`El enemigo está fuera de rango. Rango del atacante: ${rangoMaximo}`);
                     }
                 }
@@ -693,53 +656,172 @@ window.addEventListener('click', (evento) => {
         // ---------------------------------------------------------
         // CASO B: HACEMOS CLIC EN LA MESA (Para Mover)
         // ---------------------------------------------------------
-        if (objetoTocado === planoClic && piezaSeleccionada) {
+        // ---------------------------------------------------------
+        // CASO B: HACEMOS CLIC EN LA MESA (Para Mover)
+        // ---------------------------------------------------------
+        // Buscamos si el rayo atravesó la mesa, sin importar si chocó con hitboxes invisibles antes
+        const toqueMesa = intersecciones.find(i => i.object === planoClic);
+
+        if (toqueMesa && piezaSeleccionada) {
             
-            const p = intersecciones[0].point;
+            const p = toqueMesa.point;
             const distancia = Math.hypot(p.x, p.z);
             if (distancia > 5.5) { piezaSeleccionada = null; return; }
 
             let nuevoAnillo = (distancia < 1.5) ? 0 : (distancia < 3.5) ? 1 : 2;
             let angulo = Math.atan2(p.z, p.x); 
             if (angulo < 0) angulo += 2 * Math.PI; 
-            let nuevoSegmento = Math.floor(angulo / (Math.PI / 6));
-            // --- NUEVO: CORRECCIÓN DEL CENTRO ---
-            // El centro es una sola casilla gigante. Ignoramos el ángulo.
-            if (nuevoAnillo === 0) {
-                nuevoSegmento = 0;
-            } 
+            let nuevoSegmento = Math.floor(angulo / (Math.PI / 6)); 
 
-            // REGLA 1: Solo avanzar de 1 en 1
+            if (nuevoAnillo === 0) nuevoSegmento = 0; 
+
+            // REGLAS
             if (!esAdyacente(piezaSeleccionada.userData.anillo, piezaSeleccionada.userData.segmento, nuevoAnillo, nuevoSegmento)) {
-                console.log("Movimiento inválido: Solo puedes mover 1 casilla a la vez.");
+                console.log("Solo puedes mover 1 casilla a la vez.");
                 piezaSeleccionada = null;
                 return;
-            }
 
-            // REGLA 3: No superponerse
+            }
             if (obtenerPiezaEnCasilla(nuevoAnillo, nuevoSegmento)) {
-                console.log("Movimiento inválido: La casilla ya está ocupada.");
+                console.log("Casilla ocupada.");
                 piezaSeleccionada = null;
                 return;
             }
 
-            // APLICAR MOVIMIENTO
-            const destinoCoords = obtenerCoordenadas(nuevoAnillo, nuevoSegmento);
-            piezaSeleccionada.userData.destinoX = destinoCoords.x;
-            piezaSeleccionada.userData.destinoZ = destinoCoords.z;
-            
-            // Actualizar su posición lógica en el cerebro
-            piezaSeleccionada.userData.anillo = nuevoAnillo;
-            piezaSeleccionada.userData.segmento = nuevoSegmento;
-            
-            piezaSeleccionada.lookAt(destinoCoords.x, 0, destinoCoords.z);
-
-            
-            consumirAccion();
-            
+            // <-- AHORA USAREMOS LA NUEVA FUNCIÓN QUE CREAREMOS EN EL PASO 3 -->
+            ejecutarMovimiento(piezaSeleccionada, nuevoAnillo, nuevoSegmento);
         }
     }
 });
+
+
+// --- FUNCIONES CORE DEL JUEGO ---
+
+function ejecutarMovimiento(pieza, nuevoAnillo, nuevoSegmento) {
+    const destinoCoords = obtenerCoordenadas(nuevoAnillo, nuevoSegmento);
+    pieza.userData.destinoX = destinoCoords.x;
+    pieza.userData.destinoZ = destinoCoords.z;
+    pieza.userData.anillo = nuevoAnillo;
+    pieza.userData.segmento = nuevoSegmento;
+    pieza.lookAt(destinoCoords.x, 0, destinoCoords.z);
+    
+    consumirAccion(500); // 500ms de retraso para que el muñeco alcance a llegar visualmente
+}
+
+function ejecutarAtaque(atacante, defensor) {
+    let tiempoDeAtaque = CLASES[atacante.userData.clase].tiempoAnim; 
+    let daño = Math.max(1, atacante.userData.atk - defensor.userData.def);
+    defensor.userData.hp -= daño;
+    
+    let maxHp = CLASES[defensor.userData.clase].maxHp;
+    let porcentaje = Math.max(0, defensor.userData.hp / maxHp);
+    defensor.userData.hpBarraVerde.scale.x = Math.max(0.01, porcentaje); 
+
+    reproducirEfectoAtaque(atacante, defensor, atacante.userData.clase, tiempoDeAtaque);
+
+    defensor.traverse((nodo) => {
+        if (nodo.isMesh && nodo.material) {
+            if(!nodo.userData.colorOriginal) nodo.userData.colorOriginal = nodo.material.color.getHex();
+            nodo.material.color.setHex(0xff0000); 
+        }
+    });
+
+    setTimeout(() => {
+        if (defensor.userData.hp > 0) {
+            defensor.traverse((nodo) => {
+                if (nodo.isMesh && nodo.material && nodo.userData.colorOriginal) {
+                    nodo.material.color.setHex(nodo.userData.colorOriginal);
+                }
+            });
+        } else {
+            reproducirSonido('sfx-muerte');
+            scene.remove(defensor);
+            if (defensor.parent) scene.remove(defensor.parent);
+            piezasArray.splice(piezasArray.indexOf(defensor), 1);
+            verificarVictoria();
+        }
+    }, tiempoDeAtaque);
+
+    consumirAccion(tiempoDeAtaque); // Espera a que termine la animación antes de seguir el turno
+}
+
+// Nueva versión de consumir Acción que permite retrasos (tiempoEspera)
+function consumirAccion(tiempoEspera = 0) {
+    setTimeout(() => {
+        accionesRestantes--;
+        piezaSeleccionada = null; 
+        
+        if (accionesRestantes <= 0) {
+            finalizarTurno();
+        } else if (modoJuego === '1P' && turnoActual === 2) {
+            IA_jugarTurno(); // Si le queda 1 acción a la CPU, que la ejecute
+        }
+    }, tiempoEspera);
+}
+
+// --- EL CEREBRO DE LA CPU ---
+function IA_jugarTurno() {
+    if (accionesRestantes <= 0 || piezasArray.length === 0) return;
+
+    // Pequeña pausa para que parezca que está "pensando"
+    setTimeout(() => {
+        let equipoCPU = piezasArray.filter(p => p.userData.equipo === 2);
+        let equipoJugador = piezasArray.filter(p => p.userData.equipo === 1 && p.userData.hp > 0);
+
+        if (equipoCPU.length === 0 || equipoJugador.length === 0) return;
+
+        // 1. ¿PUEDO ATACAR A ALGUIEN?
+        let ataco = false;
+        // Mezclamos a la CPU para que no ataque siempre con el mismo
+        equipoCPU.sort(() => 0.5 - Math.random()); 
+
+        for (let atacante of equipoCPU) {
+            for (let victima of equipoJugador) {
+                let dist = calcularDistanciaGrid(atacante.userData.anillo, atacante.userData.segmento, victima.userData.anillo, victima.userData.segmento);
+                if (dist <= CLASES[atacante.userData.clase].rango) {
+                    piezaSeleccionada = atacante; // Visulamente se selecciona
+                    console.log("IA decide ATACAR");
+                    ejecutarAtaque(atacante, victima);
+                    ataco = true;
+                    break;
+                }
+            }
+            if (ataco) break;
+        }
+
+        // 2. SI NO PUEDE ATACAR, SE MUEVE
+        if (!ataco) {
+            let piezaMóvil = equipoCPU[0]; // Como lo mezclamos arriba, es al azar
+            piezaSeleccionada = piezaMóvil;
+            
+            // Buscamos a dónde puede ir
+            let movimientosPosibles = [];
+            for(let a=0; a<=2; a++) {
+                let maxS = (a===0) ? 0 : 11;
+                for(let s=0; s<=maxS; s++) {
+                    if (esAdyacente(piezaMóvil.userData.anillo, piezaMóvil.userData.segmento, a, s) && !obtenerPiezaEnCasilla(a, s)) {
+                        movimientosPosibles.push({anillo: a, segmento: s});
+                    }
+                }
+            }
+
+            if (movimientosPosibles.length > 0) {
+                // Ordenamos los movimientos para preferir acercarse al centro
+                movimientosPosibles.sort((m1, m2) => {
+                    let distA = calcularDistanciaGrid(m1.anillo, m1.segmento, 0, 0);
+                    let distB = calcularDistanciaGrid(m2.anillo, m2.segmento, 0, 0);
+                    return distA - distB;
+                });
+                
+                console.log("IA decide MOVER");
+                ejecutarMovimiento(piezaMóvil, movimientosPosibles[0].anillo, movimientosPosibles[0].segmento);
+            } else {
+                // Si está atrapada, pierde la acción
+                consumirAccion(500); 
+            }
+        }
+    }, 800); // 0.8 seg de "pensamiento"
+}
 
 // Función que cambia de equipo realmente
 function finalizarTurno() {
@@ -763,17 +845,21 @@ function finalizarTurno() {
         // Si el centro está vacío (nadie entró, o la pieza salió/murió), el contador se resetea a 0
         turnosEnCentro = { equipo1: 0, equipo2: 0 };
     }
-}
-// Función para restar acciones y chequear si el turno termina
-function consumirAccion() {
-    accionesRestantes--;
-    piezaSeleccionada = null; // Deseleccionamos para obligar a elegir de nuevo (o la misma)
-    console.log(`Acciones restantes: ${accionesRestantes}`);
-    
-    if (accionesRestantes <= 0) {
-        finalizarTurno();
+    // Si estamos en 1 Jugador y le toca al Rojo (CPU)
+    if (modoJuego === '1P' && turnoActual === 2) {
+        IA_jugarTurno(); // Despertar al cerebro de la CPU
     }
 }
+// Función para restar acciones y chequear si el turno termina
+//function consumirAccion() {
+//    accionesRestantes--;
+//    piezaSeleccionada = null; // Deseleccionamos para obligar a elegir de nuevo (o la misma)
+//    console.log(`Acciones restantes: ${accionesRestantes}`);
+//    
+//    if (accionesRestantes <= 0) {
+//        finalizarTurno();
+//    }
+//}
 
 // ==========================================
 // 9. BUCLE DE ANIMACIÓN
