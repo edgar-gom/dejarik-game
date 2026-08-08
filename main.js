@@ -836,9 +836,9 @@ function finalizarTurno() {
         // Si hay una pieza, sumamos 1 punto a su equipo
         let equipoStr = piezaEnCentro.userData.equipo === 1 ? 'equipo1' : 'equipo2';
         turnosEnCentro[equipoStr]++;
-        console.log(`Dominio: El Equipo ${piezaEnCentro.userData.equipo} lleva ${turnosEnCentro[equipoStr]} / 12 turnos`);
+        console.log(`Dominio: El Equipo ${piezaEnCentro.userData.equipo} lleva ${turnosEnCentro[equipoStr]} / 15 turnos`);
         //Contador de turnos de dominio
-        if (turnosEnCentro[equipoStr] >= 12) {
+        if (turnosEnCentro[equipoStr] >= 15) {
             mostrarVictoria(`¡EL EQUIPO ${piezaEnCentro.userData.equipo === 1 ? 'AZUL' : 'ROJO'} GANA POR DOMINIO!`);
         }
     } else {
