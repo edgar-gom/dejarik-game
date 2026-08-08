@@ -32,8 +32,11 @@
             <h2>INSTRUCCIONES</h2>
             <p>- Mueve una pieza por turno a una casilla adyacente.</p>
             <p>- Ataca a los enemigos para vaciar su barra de vida.</p>
-            <p>- Mantén una pieza en el rombo central durante 4 turnos para ganar.</p>
-            <button onclick="irASeleccion()">JUGAR</button>
+            <p>- Hay 4 tipos de criaturas con habilidades únicas.</p>
+            <p>- Mantén una pieza en el rombo central durante 12 turnos para ganar.</p>
+            <!-- <button onclick="irASeleccion()">JUGAR</button> -->
+            <button onclick="irASeleccion('1P')">1 JUGADOR (VS CPU)</button>
+            <button onclick="irASeleccion('2P')">2 JUGADORES (LOCAL)</button>
         </div>
 
         <!-- 3. Selección de Equipo (Dividida en 2 mitades) -->
@@ -60,9 +63,10 @@
     <audio id="bgm-menu" loop src="assets/audio/menu.mp3"></audio>
     <audio id="bgm-batalla" loop src="assets/audio/batalla.mp3"></audio>
     <audio id="bgm-victoria" src="assets/audio/victoria.mp3"></audio>
+    <!----> 
     <audio id="sfx-muerte" src="assets/audio/explosion.mp3"></audio>
-    <audio id="sfx-clic" src="assets/audio/clic.mp3"></audio>
-    
+   <!-- <audio id="sfx-clic" src="assets/audio/clic.mp3"></audio> -->
+
 
     <!-- NUEVOS SONIDOS DE CLASE -->
     <audio id="sfx-ataque-tanque" src="assets/audio/golpe_tanque.mp3"></audio>
