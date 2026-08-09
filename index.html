@@ -32,7 +32,7 @@
             <h2>INSTRUCCIONES</h2>
             <p>- Mueve una pieza por turno a una casilla adyacente.</p>
             <p>- Ataca a los enemigos para vaciar su barra de vida.</p>
-            <p>- Hay 4 tipos de criaturas con habilidades únicas.</p>
+            <p>- Hay 5 tipos de criaturas con habilidades únicas.</p>
             <p>- Mantén una pieza en el rombo central durante 15 turnos para ganar.</p>
             <!-- <button onclick="irASeleccion()">JUGAR</button> -->
             <button onclick="irASeleccion('1P')">1 JUGADOR (VS CPU)</button>
@@ -42,9 +42,9 @@
         <!-- 3. Selección de Equipo (Dividida en 2 mitades) -->
         <div id="pantalla-seleccion" class="pantalla" style="flex-direction: row; justify-content: flex-start; background: transparent;">
             <div style="width: 50%; padding: 40px; height: 100%; background-color: rgba(0, 0, 0, 0.8); overflow-y: auto; display: flex; flex-direction: column; align-items: center;">
-                <h2>ELIGE TUS 4 CRIATURAS</h2>
+                <h2>ELIGE TUS 5 CRIATURAS</h2>
                 <div id="grid-monstruos"></div>
-                <h3 id="contador-seleccion">Seleccionados: 0 / 4</h3>
+                <h3 id="contador-seleccion">Seleccionados: 0 / 5</h3>
                 <button id="btn-iniciar" onclick="iniciarJuego()" style="display:none;">COMENZAR BATALLA</button>
             </div>
             <div style="width: 50%;"></div>
@@ -73,6 +73,7 @@
     <audio id="sfx-ataque-guerrero" src="assets/audio/corte_guerrero.mp3"></audio>
     <audio id="sfx-ataque-defensor" src="assets/audio/destello_defensor.mp3"></audio>
     <audio id="sfx-ataque-asesino" src="assets/audio/flecha_asesino.mp3"></audio>
+    <audio id="sfx-curar" src="assets/audio/curar.mp3"></audio>
 
     
     <!-- Este script debe ser module para usar import/export -->

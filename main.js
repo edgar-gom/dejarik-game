@@ -380,7 +380,7 @@ const INVENTARIO = [
     { nombre: "Doc",         ruta: "assets/5Doc.glb",    clase: "sanador", escalaExtra: 0.5 }, // <-- ¡Nuevo!
 
     { nombre: "Skeleton",  ruta: "assets/PSkeleton.glb", clase: "guerrero" },
-    { nombre: "Sharrky",  ruta: "assets/PSharrky.glb", clase: "tanque" },
+    { nombre: "Sharky",  ruta: "assets/PSharky.glb", clase: "tanque" },
     { nombre: "Marie",  ruta: "assets/PMarie.glb", clase: "asesino" },
     { nombre: "Capitán Barbosa",  ruta: "assets/PCapitan_Barbosa.glb", clase: "defensor" },
     { nombre: "Henry",  ruta: "assets/PHenry.glb", clase: "sanador" }
