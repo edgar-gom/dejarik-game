@@ -153,7 +153,7 @@ document.getElementById('bgm-victoria').volume = 0.7; // % de volumen (70%)
 const CLASES = {
     'tanque':    { maxHp: 22, atk: 8, def: 3.5, rango: 1, tiempoAnim: 4000  }, // Mucha vida, pega normal
     'asesino':   { maxHp: 10,  atk: 12, def: 1, rango: 2, tiempoAnim: 1500 }, // Pega durísimo, muere rápido <- ¡Este ahora dispara de lejos!
-    'guerrero':  { maxHp: 15, atk: 9, def: 2, rango: 1, tiempoAnim: 35000  }, // Equilibrado
+    'guerrero':  { maxHp: 15, atk: 9, def: 2, rango: 1, tiempoAnim: 3500  }, // Equilibrado
     'defensor':  { maxHp: 18, atk: 6, def: 4, rango: 1, tiempoAnim: 5000  },  // Aguanta golpes en el centro
     'sanador':   { maxHp: 12, atk: 5, def: 1.5, rango: 2, tiempoAnim: 2500 } 
 };
