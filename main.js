@@ -151,10 +151,11 @@ document.getElementById('bgm-victoria').volume = 0.7; // % de volumen (70%)
 
 // CLASES DE CRIATURAS (Tus 4 tipos)
 const CLASES = {
-    'tanque':    { maxHp: 20, atk: 8, def: 3, rango: 1, tiempoAnim: 4500  }, // Mucha vida, pega normal
+    'tanque':    { maxHp: 22, atk: 8, def: 3.5, rango: 1, tiempoAnim: 4000  }, // Mucha vida, pega normal
     'asesino':   { maxHp: 10,  atk: 12, def: 1, rango: 2, tiempoAnim: 1500 }, // Pega durísimo, muere rápido <- ¡Este ahora dispara de lejos!
-    'guerrero':  { maxHp: 15, atk: 9, def: 2, rango: 1, tiempoAnim: 4000  }, // Equilibrado
-    'defensor':  { maxHp: 18, atk: 5, def: 4, rango: 1, tiempoAnim: 5500  }  // Aguanta golpes en el centro
+    'guerrero':  { maxHp: 15, atk: 9, def: 2, rango: 1, tiempoAnim: 35000  }, // Equilibrado
+    'defensor':  { maxHp: 18, atk: 6, def: 4, rango: 1, tiempoAnim: 5000  },  // Aguanta golpes en el centro
+    'sanador':   { maxHp: 12, atk: 5, def: 1.5, rango: 2, tiempoAnim: 2500 } 
 };
 
 // HELPER 1: Convierte Casilla Lógica (Anillo, Segmento) a Coordenadas 3D (X, Z)
@@ -363,16 +364,26 @@ const INVENTARIO = [
     { nombre: "Robot Beta",  ruta: "assets/robot2.glb", clase: "tanque" },
     { nombre: "Robot Gamma", ruta: "assets/robot3.glb", clase: "asesino" },
     { nombre: "Robot Delta", ruta: "assets/robot4.glb", clase: "defensor" },
+    { nombre: "Robot Epsilon",ruta:"assets/robot5.glb", clase: "sanador" }, // <-- ¡Nuevo!
+
     
     { nombre: "Mecha Uno",   ruta: "assets/mecha1.glb", clase: "guerrero" },
     { nombre: "Mecha Dos",   ruta: "assets/mecha2.glb", clase: "tanque" },
     { nombre: "Mecha Tres",  ruta: "assets/mecha3.glb", clase: "asesino" },
     { nombre: "Mecha Cuatro",ruta: "assets/mecha4.glb", clase: "defensor" },
+    { nombre: "Mecha Cinco", ruta: "assets/mecha5.glb", clase: "sanador" }, // <-- ¡Nuevo!
     
     { nombre: "George",      ruta: "assets/1George.glb", clase: "guerrero", escalaExtra: 0.5 },
     { nombre: "Leela",       ruta: "assets/2Leela.glb",  clase: "tanque", escalaExtra: 0.5 },
     { nombre: "Mike",        ruta: "assets/3Mike.glb",   clase: "asesino", escalaExtra: 0.5 },
-    { nombre: "Stan",        ruta: "assets/4Stan.glb",   clase: "defensor", escalaExtra: 0.5 }
+    { nombre: "Stan",        ruta: "assets/4Stan.glb",   clase: "defensor", escalaExtra: 0.5 },
+    { nombre: "Doc",         ruta: "assets/5Doc.glb",    clase: "sanador", escalaExtra: 0.5 }, // <-- ¡Nuevo!
+
+    { nombre: "Skeleton",  ruta: "assets/PSkeleton.glb", clase: "guerrero" },
+    { nombre: "Sharrky",  ruta: "assets/PSharrky.glb", clase: "tanque" },
+    { nombre: "Marie",  ruta: "assets/PMarie.glb", clase: "asesino" },
+    { nombre: "Capitán Barbosa",  ruta: "assets/PCapitan_Barbosa.glb", clase: "defensor" },
+    { nombre: "Henry",  ruta: "assets/PHenry.glb", clase: "sanador" }
 ];
 
 let equipo1Elegido = [];
@@ -438,13 +449,13 @@ function generarGridSeleccion() {
                 div.classList.remove('seleccionado');
                 equipo1Elegido = equipo1Elegido.filter(m => m !== monstruo);
             } else {
-                if (equipo1Elegido.length < 4) {
+                if (equipo1Elegido.length < 5) {
                     div.classList.add('seleccionado');
                     equipo1Elegido.push(monstruo);
                 }
             }
-            document.getElementById('contador-seleccion').innerText = `Seleccionados: ${equipo1Elegido.length} / 4`;
-            document.getElementById('btn-iniciar').style.display = (equipo1Elegido.length === 4) ? 'block' : 'none';
+            document.getElementById('contador-seleccion').innerText = `Seleccionados: ${equipo1Elegido.length} / 5`;
+            document.getElementById('btn-iniciar').style.display = (equipo1Elegido.length === 5) ? 'block' : 'none';
         };
         grid.appendChild(div);
     });
@@ -465,7 +476,7 @@ window.iniciarJuego = function() {
 
     // Desplegar Equipo 2 (Elegidos al azar para la computadora/jugador 2)
     let inventarioRandom = [...INVENTARIO].sort(() => 0.5 - Math.random());
-    for(let i = 0; i < 4; i++) {
+    for(let i = 0; i < 5; i++) {
         // Los ponemos en los segmentos del otro lado (6, 7, 8, 9)
         cargarPieza(inventarioRandom[i].ruta, 2, i + 6, 2, inventarioRandom[i].clase);
     }
@@ -650,13 +661,28 @@ window.addEventListener('click', (evento) => {
 
     // CASO B: Ya hay una pieza seleccionada
     if (piezaEnCasilla) {
-        // B.1 Clic en un ALIADO: Cambiamos la selección al nuevo aliado
+        // B.1 Clic en un ALIADO
         if (piezaEnCasilla.userData.equipo === piezaSeleccionada.userData.equipo) {
+            
+            // --- NUEVO: ¿Intentamos curar? ---
+            if (piezaSeleccionada.userData.clase === 'sanador' && piezaEnCasilla !== piezaSeleccionada) {
+                let maxHpAliado = CLASES[piezaEnCasilla.userData.clase].maxHp;
+                
+                if (piezaEnCasilla.userData.hp < maxHpAliado) { // Solo si está herido
+                    let dist = calcularDistanciaGrid(piezaSeleccionada.userData.anillo, piezaSeleccionada.userData.segmento, anilloClic, segmentoClic);
+                    if (dist <= CLASES['sanador'].rango) {
+                        ejecutarCuracion(piezaSeleccionada, piezaEnCasilla);
+                        return; // Detenemos aquí, NO cambiamos de selección
+                    }
+                }
+            }
+
+            // Si no curamos, cambiamos la selección normalmente
             piezaSeleccionada = piezaEnCasilla;
             piezaSeleccionada.position.y += 0.5; 
             setTimeout(() => { piezaSeleccionada.position.y -= 0.5; }, 150);
             reproducirSonido('sfx-clic');
-        } 
+        }
         // B.2 Clic en un ENEMIGO: Atacar
         else {
             let rangoMaximo = CLASES[piezaSeleccionada.userData.clase].rango;
@@ -730,6 +756,61 @@ function ejecutarAtaque(atacante, defensor) {
     consumirAccion(tiempoDeAtaque); // Espera a que termine la animación antes de seguir el turno
 }
 
+function ejecutarCuracion(sanador, aliado) {
+    let tiempoAnim = CLASES[sanador.userData.clase].tiempoAnim;
+    let cantidadCuracion = sanador.userData.atk; // Usamos el ATK para saber cuánto cura
+
+    // Aumentar HP sin pasarse del máximo
+    let maxHp = CLASES[aliado.userData.clase].maxHp;
+    aliado.userData.hp = Math.min(maxHp, aliado.userData.hp + cantidadCuracion);
+    
+    // Actualizar barra de vida
+    let porcentaje = Math.max(0.01, aliado.userData.hp / maxHp);
+    aliado.userData.hpBarraVerde.scale.x = porcentaje;
+
+    reproducirSonido('sfx-curar');
+
+    // VFX: Aro de luz verde curativa
+    const geo = new THREE.TorusGeometry(0.8, 0.1, 8, 16);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true });
+    const vfxObj = new THREE.Mesh(geo, mat);
+    vfxObj.position.copy(aliado.position).setY(0.2); // Empieza en los pies
+    vfxObj.rotation.x = Math.PI / 2;
+    scene.add(vfxObj);
+
+    // Pintar aliado de verde
+    aliado.traverse((nodo) => {
+        if (nodo.isMesh && nodo.material) {
+            if(!nodo.userData.colorOriginal) nodo.userData.colorOriginal = nodo.material.color.getHex();
+            nodo.material.color.setHex(0x00ff00); 
+        }
+    });
+
+    let tiempoInicio = Date.now();
+    const animarCuracion = () => {
+        let progreso = (Date.now() - tiempoInicio) / tiempoAnim;
+        if (progreso > 1) progreso = 1;
+        
+        vfxObj.position.y = THREE.MathUtils.lerp(0.2, 2.5, progreso); // El aro sube
+        vfxObj.scale.set(1 - (progreso*0.5), 1 - (progreso*0.5), 1); // Se encoge ligeramente
+        vfxObj.material.opacity = 1 - progreso;
+    };
+    efectosActivos.push(animarCuracion);
+
+    setTimeout(() => {
+        aliado.traverse((nodo) => {
+            if (nodo.isMesh && nodo.material && nodo.userData.colorOriginal) {
+                nodo.material.color.setHex(nodo.userData.colorOriginal);
+            }
+        });
+        scene.remove(vfxObj);
+        vfxObj.geometry.dispose();
+        efectosActivos.splice(efectosActivos.indexOf(animarCuracion), 1);
+    }, tiempoAnim);
+
+    consumirAccion(tiempoAnim);
+}
+
 // Nueva versión de consumir Acción que permite retrasos (tiempoEspera)
 function consumirAccion(tiempoEspera = 0) {
     setTimeout(() => {
@@ -745,6 +826,7 @@ function consumirAccion(tiempoEspera = 0) {
 }
 
 // --- EL CEREBRO DE LA CPU ---
+// --- EL CEREBRO DE LA CPU ---
 function IA_jugarTurno() {
     if (accionesRestantes <= 0 || piezasArray.length === 0) return;
 
@@ -755,28 +837,47 @@ function IA_jugarTurno() {
 
         if (equipoCPU.length === 0 || equipoJugador.length === 0) return;
 
-        // 1. ¿PUEDO ATACAR A ALGUIEN?
-        let ataco = false;
-        // Mezclamos a la CPU para que no ataque siempre con el mismo
+        // 1. ¿PUEDO HACER UNA ACCIÓN (Curar o Atacar)?
+        let accionRealizada = false;
+        
+        // Mezclamos a la CPU para que no actúe siempre con el mismo robot
         equipoCPU.sort(() => 0.5 - Math.random()); 
 
-        for (let atacante of equipoCPU) {
+        for (let pieza of equipoCPU) {
+            
+            // A. LÓGICA EXCLUSIVA DEL SANADOR: Buscar aliados heridos para curar
+            if (pieza.userData.clase === 'sanador') {
+                let aliadosHeridos = equipoCPU.filter(p => p.userData.hp < CLASES[p.userData.clase].maxHp && p !== pieza);
+                for (let aliado of aliadosHeridos) {
+                    let dist = calcularDistanciaGrid(pieza.userData.anillo, pieza.userData.segmento, aliado.userData.anillo, aliado.userData.segmento);
+                    if (dist <= CLASES['sanador'].rango) {
+                        piezaSeleccionada = pieza;
+                        console.log("IA decide CURAR");
+                        ejecutarCuracion(pieza, aliado);
+                        accionRealizada = true;
+                        break;
+                    }
+                }
+            }
+            if (accionRealizada) break;
+
+            // B. LÓGICA DE ATAQUE PARA TODAS LAS CLASES (Incluyendo sanador si no curó)
             for (let victima of equipoJugador) {
-                let dist = calcularDistanciaGrid(atacante.userData.anillo, atacante.userData.segmento, victima.userData.anillo, victima.userData.segmento);
-                if (dist <= CLASES[atacante.userData.clase].rango) {
-                    piezaSeleccionada = atacante; // Visulamente se selecciona
+                let dist = calcularDistanciaGrid(pieza.userData.anillo, pieza.userData.segmento, victima.userData.anillo, victima.userData.segmento);
+                if (dist <= CLASES[pieza.userData.clase].rango) {
+                    piezaSeleccionada = pieza;
                     console.log("IA decide ATACAR");
-                    ejecutarAtaque(atacante, victima);
-                    ataco = true;
+                    ejecutarAtaque(pieza, victima);
+                    accionRealizada = true;
                     break;
                 }
             }
-            if (ataco) break;
+            if (accionRealizada) break;
         }
 
-        // 2. SI NO PUEDE ATACAR, SE MUEVE
-        if (!ataco) {
-            let piezaMóvil = equipoCPU[0]; // Como lo mezclamos arriba, es al azar
+        // 2. SI NO PUDO CURAR NI ATACAR, ENTONCES SE MUEVE
+        if (!accionRealizada) {
+            let piezaMóvil = equipoCPU[0]; 
             piezaSeleccionada = piezaMóvil;
             
             // Buscamos a dónde puede ir
@@ -791,7 +892,7 @@ function IA_jugarTurno() {
             }
 
             if (movimientosPosibles.length > 0) {
-                // Ordenamos los movimientos para preferir acercarse al centro
+                // Ordenamos para que prefiera ir hacia el centro (anillo 0)
                 movimientosPosibles.sort((m1, m2) => {
                     let distA = calcularDistanciaGrid(m1.anillo, m1.segmento, 0, 0);
                     let distB = calcularDistanciaGrid(m2.anillo, m2.segmento, 0, 0);
@@ -801,7 +902,7 @@ function IA_jugarTurno() {
                 console.log("IA decide MOVER");
                 ejecutarMovimiento(piezaMóvil, movimientosPosibles[0].anillo, movimientosPosibles[0].segmento);
             } else {
-                // Si está atrapada, pierde la acción
+                // Si la pieza elegida está atrapada por otras, pierde su turno
                 consumirAccion(500); 
             }
         }
