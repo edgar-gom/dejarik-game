@@ -41,3 +41,38 @@ button:hover { background: #00ffcc; color: black; }
     border: 1px solid #555; padding: 10px; text-align: center; cursor: pointer;
 }
 .carta-monstruo.seleccionado { border-color: #00ffcc; background: rgba(0,255,204,0.2); }
+
+
+/* ========================================= */
+/* OPTIMIZACIÓN PARA CELULARES Y TABLETS     */
+/* ========================================= */
+@media (max-width: 768px) {
+    .glitch { font-size: 2rem; margin-top: 10px; }
+    
+    /* Empuja la interfaz hacia abajo */
+    #pantalla-seleccion { 
+        flex-direction: column !important; 
+        justify-content: flex-end !important; /* Manda la UI al fondo */
+    }
+    
+    /* La caja negra solo ocupará el 55% inferior de la pantalla */
+    #pantalla-seleccion > div:first-child { 
+        width: 100% !important; 
+        height: 55% !important; 
+        padding: 15px 10px !important; 
+        border-radius: 20px 20px 0 0; /* Bordes redondeados arriba */
+        background-color: rgba(0, 0, 0, 0.95) !important;
+    }
+    
+    /* Grid de 3 columnas para que los botones sean cómodos */
+    #grid-monstruos { 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 8px; width: 100%; 
+    }
+    
+    .carta-monstruo { padding: 5px; }
+    .carta-monstruo h4 { font-size: 0.8rem; margin: 3px 0; }
+    .carta-monstruo small { font-size: 0.6rem; }
+    
+    button { font-size: 1rem; padding: 10px; }
+}

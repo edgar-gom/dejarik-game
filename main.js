@@ -437,8 +437,13 @@ function generarGridSeleccion() {
                 const multi = monstruo.escalaExtra ? monstruo.escalaExtra : 1;
                 modeloPreview.scale.setScalar((3 / Math.max(tamaño.x, tamaño.y, tamaño.z)) * multi);
                 
-                // Lo ponemos a la derecha y un poco más arriba para que la UI no lo tape
-                modeloPreview.position.set(3, 0, 0); 
+                // Si la pantalla es pequeña (celular), lo pone en el centro y más arriba
+                if (window.innerWidth <= 768) {
+                    modeloPreview.position.set(0, 2, 0); // X=0 (Centro), Y=2 (Arriba)
+                } else {
+                    modeloPreview.position.set(3, 1, 0); // X=3 (Derecha) para PC
+                }
+                 
                 
                 scene.add(modeloPreview); // Lo metemos a la escena principal
             });
