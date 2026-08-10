@@ -66,6 +66,16 @@ button:hover { background: #00ffcc; color: black; }
         background-color: rgba(0, 0, 0, 0.95) !important;
     }
     
+     /* Hacemos que el botón "COMENZAR" se vea gigantesco y llamativo en celular */
+    #btn-iniciar {
+        width: 90%;
+        margin: 20px auto 10px auto;
+        background: #00ffcc;
+        color: black;
+        font-weight: bold;
+        border-radius: 10px;
+    }
+    
     /* Grid de 3 columnas para que los botones sean cómodos */
     #grid-monstruos { 
         grid-template-columns: repeat(3, 1fr); 
