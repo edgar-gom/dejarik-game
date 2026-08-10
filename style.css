@@ -59,8 +59,10 @@ button:hover { background: #00ffcc; color: black; }
     #pantalla-seleccion > div:first-child { 
         width: 100% !important; 
         height: 55% !important; 
-        padding: 15px 10px !important; 
-        border-radius: 20px 20px 0 0; /* Bordes redondeados arriba */
+        padding: 15px 10px 40px 10px !important; /* Más espacio abajo */
+        box-sizing: border-box !important; /* ¡CLAVE! Evita que el padding desborde la pantalla */
+        overflow-y: auto !important; /* Permite hacer scroll con el dedo */
+        border-radius: 20px 20px 0 0; 
         background-color: rgba(0, 0, 0, 0.95) !important;
     }
     

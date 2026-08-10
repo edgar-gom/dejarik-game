@@ -434,6 +434,9 @@ function generarGridSeleccion() {
                 const caja = new THREE.Box3().setFromObject(modeloPreview);
                 const tamaño = new THREE.Vector3(); caja.getSize(tamaño);
                 
+                // --- NUEVA LÓGICA DE ESCALA PARA CELULARES ---
+                const esCelular = window.innerWidth <= 768;
+                const factorBase = esCelular ? 1.5 : 3; // Si es celular, lo hacemos la mitad de grande
                 const multi = monstruo.escalaExtra ? monstruo.escalaExtra : 1;
                 modeloPreview.scale.setScalar((3 / Math.max(tamaño.x, tamaño.y, tamaño.z)) * multi);
                 
