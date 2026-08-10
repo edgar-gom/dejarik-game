@@ -436,17 +436,17 @@ function generarGridSeleccion() {
                 
                 // --- NUEVA LÓGICA DE ESCALA PARA CELULARES ---
                 const esCelular = window.innerWidth <= 768;
-                const factorBase = esCelular ? 1.5 : 3; // Si es celular, lo hacemos la mitad de grande
+                const factorBase = esCelular ? 1.2 : 3; // Si es celular, lo hacemos la mitad de grande
                 const multi = monstruo.escalaExtra ? monstruo.escalaExtra : 1;
                 modeloPreview.scale.setScalar((3 / Math.max(tamaño.x, tamaño.y, tamaño.z)) * multi);
                 
                 // Si la pantalla es pequeña (celular), lo pone en el centro y más arriba
-                if (window.innerWidth <= 768) {
-                    modeloPreview.position.set(0, 2, 0); // X=0 (Centro), Y=2 (Arriba)
+                if (esCelular) {
+                    // Bajamos el modelo (Y negativo) para que se vea la cabeza en la mitad superior de la pantalla
+                    modeloPreview.position.set(0, -0.5, 0); 
                 } else {
-                    modeloPreview.position.set(3, 1, 0); // X=3 (Derecha) para PC
+                    modeloPreview.position.set(3, 1, 0); // PC
                 }
-                 
                 
                 scene.add(modeloPreview); // Lo metemos a la escena principal
             });
