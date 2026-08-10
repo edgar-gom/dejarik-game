@@ -10,7 +10,8 @@ canvas {
 
 #ui-layer {
     position: absolute;
-    top: 0; left: 0; width: 100vw; height: 100vh;
+    top: 0; left: 0; width: 100vw; 
+    height: 100dvh;
     pointer-events: none; /* Deja pasar los clics al 3D cuando está vacío */
     z-index: 10;
 }
@@ -49,42 +50,49 @@ button:hover { background: #00ffcc; color: black; }
 @media (max-width: 768px) {
     .glitch { font-size: 2rem; margin-top: 10px; }
     
-    /* Empuja la interfaz hacia abajo */
     #pantalla-seleccion { 
         flex-direction: column !important; 
-        justify-content: flex-end !important; /* Manda la UI al fondo */
+        justify-content: flex-end !important; 
     }
     
-    /* La caja negra solo ocupará el 55% inferior de la pantalla */
+    /* La caja negra ahora se adapta perfectamente */
     #pantalla-seleccion > div:first-child { 
         width: 100% !important; 
-        height: 55% !important; 
-        padding: 15px 10px 40px 10px !important; /* Más espacio abajo */
-        box-sizing: border-box !important; /* ¡CLAVE! Evita que el padding desborde la pantalla */
-        overflow-y: auto !important; /* Permite hacer scroll con el dedo */
+        height: 60% !important; /* Le damos un poco más de espacio */
+        padding: 10px !important; 
+        box-sizing: border-box !important;
         border-radius: 20px 20px 0 0; 
         background-color: rgba(0, 0, 0, 0.95) !important;
+        
+        /* MAGIA: Convertimos la caja en una columna flexible */
+        display: flex !important;
+        flex-direction: column;
+        overflow: hidden !important; /* Oculta lo que se desborde de la caja general */
     }
     
-     /* Hacemos que el botón "COMENZAR" se vea gigantesco y llamativo en celular */
-    #btn-iniciar {
-        width: 90%;
-        margin: 20px auto 10px auto;
-        background: #00ffcc;
-        color: black;
-        font-weight: bold;
-        border-radius: 10px;
-    }
-    
-    /* Grid de 3 columnas para que los botones sean cómodos */
+    /* MAGIA 2: Hacemos que SOLO la lista de cartas sea deslizable */
     #grid-monstruos { 
         grid-template-columns: repeat(3, 1fr); 
         gap: 8px; width: 100%; 
+        flex-grow: 1; /* Toma todo el espacio disponible */
+        overflow-y: auto !important; /* Permite deslizar solo aquí */
+        margin-bottom: 10px;
+        padding-bottom: 10px;
     }
     
     .carta-monstruo { padding: 5px; }
     .carta-monstruo h4 { font-size: 0.8rem; margin: 3px 0; }
     .carta-monstruo small { font-size: 0.6rem; }
     
-    button { font-size: 1rem; padding: 10px; }
+    /* El botón se queda fijo abajo, sin importar cuánto deslices arriba */
+    #btn-iniciar {
+        width: 95%;
+        margin: 0 auto 10px auto; /* Lo separamos un poco del borde inferior */
+        flex-shrink: 0; /* Evita que el botón se aplaste */
+        background: #00ffcc;
+        color: black;
+        font-weight: bold;
+        border-radius: 10px;
+        padding: 15px;
+    }
 }
